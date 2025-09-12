@@ -29,6 +29,8 @@ export function convertBacklogToMarkdown(src: string): string {
       return `\uE000QUOTE_BLOCK_${blockId}\uE001`;
     });
   }
+  // テーブルの変換
+  convertedText = convertTablesToMarkdown(convertedText);
   // 行単位の変換
   const convertedLines = convertedText.split("\n").map(convertSingleLine);
   convertedText = convertedLines.join("\n");
@@ -56,6 +58,80 @@ function convertQuoteToMarkdown(inner: string): string {
     .split("\n")
     .map((line) => `> ${line.trim()}`)
     .join("\n");
+}
+
+/**
+ * テーブルの変換
+ * @param src - 変換対象のテキストすべて
+ * @returns Markdown形式のテーブルに変換されたテキスト
+ */
+function convertTablesToMarkdown(src: string): string {
+  const lines = String(src).split("\n");
+  const out: string[] = [];
+  let buf: string[] = [];
+  const isTableLine = (line: string) => /^\s*\|/.test(line.trim());
+  const flush = () => {
+    if (buf.length === 0) return;
+    // 1) 1テーブル塊を解析
+    const rows = buf.map((raw) => {
+      let line = raw.trim();
+      let headerMarked = false;
+      // 行末の |h / |H でヘッダー指定
+      if (/\|h\s*$/i.test(line)) {
+        headerMarked = true;
+        line = line.replace(/\|h\s*$/i, "");
+      }
+      // 先頭・末尾の | を除去
+      line = line.replace(/^\|/, "").replace(/\|$/, "");
+      // セル分割
+      const cells = line.split("|").map((c) => {
+        let cell = c.trim();
+        // セル先頭の ~ は削除（※ヘッダー指定には使わない）
+        if (/^~+/.test(cell)) cell = cell.replace(/^~+/, "");
+        // 必要最小限のエスケープ
+        cell = cell.replace(/\|/g, "\\|");
+        return cell;
+      });
+      return { cells, headerMarked };
+    });
+    // 2) 列数そろえ
+    const cols = Math.max(1, ...rows.map((r) => r.cells.length));
+    const pad = (arr: string[]) => {
+      const a = arr.slice();
+      while (a.length < cols) a.push("");
+      return a;
+    };
+    // 3) ヘッダー決定：|h があればその行、なければ「空ヘッダー」
+    const headerIdx = rows.findIndex((r) => r.headerMarked);
+    const md: string[] = [];
+    if (headerIdx === -1) {
+      // 空ヘッダー
+      const empty = Array(cols).fill("");
+      md.push(`| ${empty.join(" | ")} |`);
+      md.push(`| ${empty.map(() => "---").join(" | ")} |`);
+      rows.forEach((r) => md.push(`| ${pad(r.cells).join(" | ")} |`));
+    } else {
+      // |h 行をヘッダーとして使用
+      const header = pad(rows[headerIdx].cells);
+      md.push(`| ${header.join(" | ")} |`);
+      md.push(`| ${header.map(() => "---").join(" | ")} |`);
+      rows.forEach((r, i) => {
+        if (i === headerIdx) return;
+        md.push(`| ${pad(r.cells).join(" | ")} |`);
+      });
+    }
+    out.push(md.join("\n"));
+    buf = [];
+  };
+  for (const line of lines) {
+    if (isTableLine(line)) buf.push(line);
+    else {
+      flush();
+      out.push(line);
+    }
+  }
+  flush();
+  return out.join("\n");
 }
 
 /**
