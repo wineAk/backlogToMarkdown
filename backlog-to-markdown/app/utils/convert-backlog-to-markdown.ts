@@ -163,13 +163,13 @@ function convertSingleLine(line: string): string {
   const bulletMatch = convertedLine.match(/^(-+)\s+(.*)$/);
   if (bulletMatch) {
     const indentLevel = Math.max(1, bulletMatch[1].length);
-    return `${"  ".repeat(indentLevel - 1)}- ${bulletMatch[2]}`;
+    return `${"    ".repeat(indentLevel - 1)}- ${bulletMatch[2]}`;
   }
   // 箇条書き（数字）+ の深さでインデント、番号は 1. でOK
   const numberedMatch = convertedLine.match(/^(\++)\s+(.*)$/);
   if (numberedMatch) {
     const indentLevel = Math.max(1, numberedMatch[1].length);
-    return `${"  ".repeat(indentLevel - 1)}1. ${numberedMatch[2]}`;
+    return `${"    ".repeat(indentLevel - 1)}1. ${numberedMatch[2]}`;
   }
   // 色マクロ（簡易：色指定は捨ててテキストのみ残す）
   //convertedLine = convertedLine.replace(/&color\(([^)]+)\)\s*\{\s*([^}]+)\s*\}/gi, "$2");
