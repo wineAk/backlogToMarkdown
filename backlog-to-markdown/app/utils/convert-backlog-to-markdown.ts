@@ -43,7 +43,7 @@ export function convertBacklogToMarkdown(src: string): string {
     const codeBody = (inlineCodeBlocks[Number(index)] || "").replace(/^\n+|\n+$/g, "");
     return `\`${codeBody}\``;
   });
-  convertedText = convertedText.replace(/\uE000QUOTE_BLOCK_(\d+)\uE001/g, (_, index) => `${quoteBlocks[Number(index)]}\n`);
+  convertedText = convertedText.replace(/\uE000QUOTE_BLOCK_(\d+)\uE001/g, (_, index) => `${quoteBlocks[Number(index)]}`);
   return convertedText;
 }
 
