@@ -15,10 +15,14 @@ export function loader({ context }: Route.LoaderArgs) {
 }
 
 export async function action({ request }: Route.ActionArgs) {
-  const formData = await request.formData();
-  const backlogInput = formData.get("backlog-input");
-  const markdown = convertBacklogToMarkdown(String(backlogInput));
-  return { message: "success", markdown };
+  try {
+    const formData = await request.formData();
+    const backlogInput = formData.get("backlog-input");
+    const markdown = convertBacklogToMarkdown(String(backlogInput));
+    return { success: true, markdown };
+  } catch (error) {
+    return { success: false, error: error };
+  }
 }
 
 export default function Home({ loaderData }: Route.ComponentProps) {
