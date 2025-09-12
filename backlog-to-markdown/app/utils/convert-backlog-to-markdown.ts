@@ -145,8 +145,10 @@ function convertSingleLine(line: string): string {
   convertedLine = convertedLine.replace(/#contents/gi, "[toc]");
   // 改行 &br; => <br>
   convertedLine = convertedLine.replace(/&br;/gi, "<br>");
-  // 画像 #image(), #thumbnail() => ![][URL] ※ ![](URL)では動かず
-  convertedLine = convertedLine.replace(/#(?:image|thumbnail)\(([^)]+)\)/gi, (_, url) => `![][${url}]`);
+  // 画像 #image(), #thumbnail() => ![](URL) ※URLだとこっち
+  convertedLine = convertedLine.replace(/#(?:image|thumbnail)\((https?:\/\/[^)]+)\)/gi, (_, url) => `![](${url})`);
+  // 画像 #image(), #thumbnail() => ![][PATH] ※ファイル名だとこっち
+  convertedLine = convertedLine.replace(/#(?:image|thumbnail)\(([^)]+)\)/gi, (_, path) => `![][${path}]`);
   // URL [[Label>URL]] / [[Label:URL]] => [$1]($2)
   convertedLine = convertedLine.replace(/\[\[([^\]>\:]+)[>:]([^\]]+)\]\]/g, "[$1]($2)");
   // 打ち消し %%...%% => ~~...~~
