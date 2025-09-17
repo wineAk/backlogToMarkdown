@@ -19,45 +19,51 @@ export function convertBacklogToMarkdown(src: string): string {
     const blockId = inlineCodeBlocks.push(inner) - 1;
     return `\uE000INLINE_CODE_BLOCK_${blockId}\uE001`;
   });
-  // 引用ブロック {quote}...{/quote} を > でラップ（入れ子も while で吸収）
+  // 引用ブロック {quote}...{/quote} を保護
   const quoteBlocks: string[] = [];
-  const quoteRegex = /\{quote\}\n([\s\S]*?)\{\/quote\}/gi;
+  const quoteRegex = /\{quote\}\s*([\s\S]*?)\s*\{\/quote\}/i; // 非貪欲 + 入れ子対応のため g を付けず while で
   while (quoteRegex.test(convertedText)) {
-    convertedText = convertedText.replace(quoteRegex, (_, inner) => {
-      const quoteBody = convertQuoteToMarkdown(inner);
-      const blockId = quoteBlocks.push(quoteBody) - 1;
-      return `\uE000QUOTE_BLOCK_${blockId}\uE001`;
+    convertedText = convertedText.replace(quoteRegex, (_m, inner: string) => {
+      // 引用ブロック内をMarkdown記述に変換
+      const beforeWrap = convertBlock(inner);
+      const wrapped = beforeWrap
+        .split("\n")
+        .map((l) => (l.trim().length ? `> ${l}` : ">"))
+        .join("\n");
+      const id = quoteBlocks.push(wrapped) - 1;
+      return `\uE000QUOTE_BLOCK_${id}\uE001`;
     });
   }
-  // テーブルの変換
-  convertedText = convertTablesToMarkdown(convertedText);
-  // 行単位の変換
-  const convertedLines = convertedText.split("\n").map(convertSingleLine);
-  convertedText = convertedLines.join("\n");
-  // 保護したブロックを復元
-  convertedText = convertedText.replace(/\uE000CODE_BLOCK_(\d+)\uE001/g, (_, index) => {
+  // 残りの本文をMarkdown記述に変換
+  convertedText = convertBlock(convertedText);
+  // コードブロックを復元
+  convertedText = convertedText.replace(/\uE000CODE_BLOCK_(\d+)\uE001/g, (_m, index) => {
     const codeBody = (codeBlocks[Number(index)] || "").replace(/^\n+|\n+$/g, "");
-    return `\`\`\`\n${codeBody}\n\`\`\``;
+    return `\n\`\`\`\n${codeBody}\n\`\`\`\n`;
   });
-  convertedText = convertedText.replace(/\uE000INLINE_CODE_BLOCK_(\d+)\uE001/g, (_, index) => {
-    const codeBody = (inlineCodeBlocks[Number(index)] || "").replace(/^\n+|\n+$/g, "");
+  // インラインコードを復元
+  convertedText = convertedText.replace(/\uE000INLINE_CODE_BLOCK_(\d+)\uE001/g, (_m, index) => {
+    const codeBody = (inlineCodeBlocks[Number(index)] || "").trim();
     return `\`${codeBody}\``;
   });
-  convertedText = convertedText.replace(/\uE000QUOTE_BLOCK_(\d+)\uE001/g, (_, index) => `${quoteBlocks[Number(index)]}\n`);
+  // 引用を復元
+  convertedText = convertedText.replace(/\uE000QUOTE_BLOCK_(\d+)\uE001/g, (_m, index) => quoteBlocks[Number(index)]);
+  // 返却
   return convertedText;
 }
 
 /**
- * quoteブロックをMarkdownの引用形式に変換
- * @param inner - quoteブロックの内容
- * @returns Markdown形式の引用
+ * ブロック単位の変換
+ * @param src - 変換対象のテキストすべて
+ * @returns Markdown形式のテーブルに変換されたテキスト
  */
-function convertQuoteToMarkdown(inner: string): string {
-  return String(inner)
-    .trimEnd()
-    .split("\n")
-    .map((line) => `> ${line.trim()}`)
-    .join("\n");
+function convertBlock(src: string): string {
+  let convertedText = src;
+  // テーブルの変換
+  convertedText = convertTablesToMarkdown(convertedText);
+  // 行単位の置換
+  convertedText = convertedText.split("\n").map(convertSingleLine).join("\n");
+  return convertedText;
 }
 
 /**
