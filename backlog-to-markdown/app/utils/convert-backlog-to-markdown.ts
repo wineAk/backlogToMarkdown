@@ -148,7 +148,7 @@ function convertTablesToMarkdown(src: string): string {
 function convertSingleLine(line: string): string {
   let convertedLine = line;
   // 目次 #contents => [toc]
-  convertedLine = convertedLine.replace(/#contents/gi, "[toc]");
+  convertedLine = convertedLine.replace(/^\s*#contents\s*$/i, "[toc]");
   // 改行 &br; => <br>
   convertedLine = convertedLine.replace(/&br;/gi, "<br>");
   // 画像 #image(), #thumbnail() => ![](URL) ※URLだとこっち
