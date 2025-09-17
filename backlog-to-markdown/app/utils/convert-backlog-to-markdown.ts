@@ -113,13 +113,13 @@ function convertTablesToMarkdown(src: string): string {
     if (headerIdx === -1) {
       // 空ヘッダー
       const empty = Array(cols).fill("");
-      md.push(`| ${empty.join(" | ")} |`);
+      md.push(`\n| ${empty.join(" | ")} |`); // テーブル表示されないケースがあるので改行を追加
       md.push(`| ${empty.map(() => "---").join(" | ")} |`);
       rows.forEach((r) => md.push(`| ${pad(r.cells).join(" | ")} |`));
     } else {
       // |h 行をヘッダーとして使用
       const header = pad(rows[headerIdx].cells);
-      md.push(`| ${header.join(" | ")} |`);
+      md.push(`\n| ${header.join(" | ")} |`); // テーブル表示されないケースがあるので改行を追加
       md.push(`| ${header.map(() => "---").join(" | ")} |`);
       rows.forEach((r, i) => {
         if (i === headerIdx) return;
