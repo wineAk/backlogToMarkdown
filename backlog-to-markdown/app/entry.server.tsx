@@ -15,10 +15,14 @@ export default async function handleRequest(
 
   // リクエストURLからパス部分のみを安全に抽出（Open Redirect対策）
   const requestUrl = new URL(request.url);
-  const pathname = requestUrl.pathname + requestUrl.search;
+  // Snyk対策: Open Redirect脆弱性を防ぐため、信頼できるオリジンでURLを再構築
+  const safeUrl = new URL(
+    requestUrl.pathname + requestUrl.search,
+    "https://b2m.saaske.workers.dev/"
+  ).toString();
 
   const body = await renderToReadableStream(
-    <ServerRouter context={routerContext} url={pathname} />,
+    <ServerRouter context={routerContext} url={safeUrl} />,
     {
       onError(error: unknown) {
         responseStatusCode = 500;
