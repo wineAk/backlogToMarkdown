@@ -13,8 +13,12 @@ export default async function handleRequest(
   let shellRendered = false;
   const userAgent = request.headers.get("user-agent");
 
+  // リクエストURLからパス部分のみを安全に抽出（Open Redirect対策）
+  const requestUrl = new URL(request.url);
+  const pathname = requestUrl.pathname + requestUrl.search;
+
   const body = await renderToReadableStream(
-    <ServerRouter context={routerContext} url={request.url} />,
+    <ServerRouter context={routerContext} url={pathname} />,
     {
       onError(error: unknown) {
         responseStatusCode = 500;
